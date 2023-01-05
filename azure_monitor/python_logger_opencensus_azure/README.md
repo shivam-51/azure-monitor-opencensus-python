@@ -208,7 +208,33 @@ config = {
         logger.warning("Some warning", extra=MyParam)
         logger.info("Some info",extra=MyParam)
     ```
+### Singleton class design
 
+Along with the one mentioned above, we also present a [Singleton][8] class design for AppLogger, which means that there can only be one instance of the logger in the application at any given time. This design choice was made to ensure that all log events are sent to the same Application Insights resource, and to avoid any issues that may arise from having multiple instances of the logger with different configurations. This is beneficial for applications that have multiple modules that need to log to the same Application Insights resource as the AzureLogHandler is only added to the logger once and thus saves on the cost of adding the handler multiple times.
+The Singleton class design is implemented as follows:
+
+```python
+
+class SingletonLoggerFactory(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(SingletonLoggerFactory, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+class AppLogger(object, metaclass=SingletonLoggerFactory):
+    
+    HANDLER_NAME = "Azure Application Insights Handler"
+
+    def __init__(self):
+        """Create an instance of the Logger class."""
+        ...
+
+    def get_logger(self, component_name="AppLogger"):
+        ...
+```
+The [monitoring_with_singleton](./monitoring_with_singleton) folder holds the implementation and sample apis.
 ### Create spans and dependency tracking
 
 To track and log time of any function, tracer span can be used as shown in following example:
@@ -297,6 +323,7 @@ Examples created using AppLogger can be found [here](./monitoring/examples/READM
 [5]: https://github.com/census-instrumentation/opencensus-python/blob/master/contrib/opencensus-ext-flask/opencensus/ext/flask/flask_middleware.py
 [6]: https://docs.microsoft.com/azure/azure-monitor/app/correlation#role-names
 [7]: https://docs.microsoft.com/azure/azure-monitor/app/opencensus-python-dependency
+[8]: https://en.wikipedia.org/wiki/Singleton_pattern
 
 ### Contributors
 
